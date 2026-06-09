@@ -362,7 +362,7 @@ fn handle_connection(mut client: TcpStream) {
     };
     
     let enforced_port = match port {
-        "22" | "109" | "111" | "3303" => port,
+        "22" | "109" | "110" | "111" | "3303" => port,
         _ => "111",
     };
     
