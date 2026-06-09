@@ -251,7 +251,7 @@ NO_START=0
 DROPBEAR_PORT=111
 
 # any additional arguments for Dropbear
-#DROPBEAR_EXTRA_ARGS="-p 109 -p 69 "
+DROPBEAR_EXTRA_ARGS="-p 111 -b /etc/issue.net -r /etc/dropbear/dropbear_rsa_host_key -r /etc/dropbear/dropbear_ecdsa_host_key -W 65536"
 
 # specify an optional banner file containing a message to be
 # sent to clients before they connect, such as "/etc/issue.net"
