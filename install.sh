@@ -120,6 +120,15 @@ sysctl_optimize "net.ipv4.tcp_keepalive_intvl" "15"
 sysctl_optimize "net.ipv4.tcp_max_syn_backlog" "8192"
 sysctl_optimize "net.ipv4.tcp_max_tw_buckets" "1440000"
 sysctl_optimize "net.ipv4.tcp_tw_reuse" "1"
+sysctl_optimize "net.ipv4.tcp_adv_win_scale" "1"
+sysctl_optimize "net.ipv4.tcp_mtu_probing" "1"
+sysctl_optimize "net.core.netdev_max_backlog" "250000"
+sysctl_optimize "net.core.somaxconn" "65535"
+sysctl_optimize "net.ipv4.ip_forward" "1"
+sysctl_optimize "net.core.rmem_max" "134217728"
+sysctl_optimize "net.core.wmem_max" "134217728"
+sysctl_optimize "net.ipv4.udp_rmem_min" "16384"
+sysctl_optimize "net.ipv4.udp_wmem_min" "16384"
 sysctl -p
 mkdir -p /etc/sysctl.d
 cat > /etc/sysctl.d/99-vpn.conf << EOF
@@ -141,6 +150,15 @@ net.ipv4.tcp_keepalive_intvl = 15
 net.ipv4.tcp_max_syn_backlog = 8192
 net.ipv4.tcp_max_tw_buckets = 1440000
 net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_adv_win_scale = 1
+net.ipv4.tcp_mtu_probing = 1
+net.core.netdev_max_backlog = 250000
+net.core.somaxconn = 65535
+net.ipv4.ip_forward = 1
+net.core.rmem_max = 134217728
+net.core.wmem_max = 134217728
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
 EOF
 sysctl --system
 
@@ -251,7 +269,7 @@ NO_START=0
 DROPBEAR_PORT=111
 
 # any additional arguments for Dropbear
-DROPBEAR_EXTRA_ARGS="-p 111 -b /etc/issue.net -r /etc/dropbear/dropbear_rsa_host_key -r /etc/dropbear/dropbear_ecdsa_host_key -W 65536"
+DROPBEAR_EXTRA_ARGS="-p 111 -b /etc/issue.net -r /etc/dropbear/dropbear_rsa_host_key -r /etc/dropbear/dropbear_ecdsa_host_key -W 262144"
 
 # specify an optional banner file containing a message to be
 # sent to clients before they connect, such as "/etc/issue.net"
@@ -268,7 +286,7 @@ DROPBEAR_ECDSAKEY="/etc/dropbear/dropbear_ecdsa_host_key"
 
 # Receive window size - this is a tradeoff between memory and
 # network performance
-DROPBEAR_RECEIVE_WINDOW=65536
+DROPBEAR_RECEIVE_WINDOW=262144
 END
 echo "/bin/false" >> /etc/shells
 echo "/usr/sbin/nologin" >> /etc/shells

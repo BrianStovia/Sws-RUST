@@ -155,7 +155,7 @@ fn base64_encode(data: &[u8]) -> String {
 
 fn read_client_initial(client: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     let mut buffer = Vec::new();
-    let mut temp = [0u8; 16384];
+    let mut temp = [0u8; 65536];
     
     client.set_read_timeout(Some(Duration::from_millis(1000)))?;
     
@@ -407,8 +407,8 @@ fn handle_connection(mut client: TcpStream) {
     
     println!("Connection: {:?} - CONNECT {}", peer_addr, target_host);
     
-    let _ = client.set_read_timeout(Some(Duration::from_secs(60)));
-    let _ = target.set_read_timeout(Some(Duration::from_secs(60)));
+    let _ = client.set_read_timeout(Some(Duration::from_secs(300)));
+    let _ = target.set_read_timeout(Some(Duration::from_secs(300)));
     
     let mut client_read = match client.try_clone() {
         Ok(c) => c,
@@ -423,7 +423,7 @@ fn handle_connection(mut client: TcpStream) {
     let mut target_write = target;
     
     let t1 = std::thread::spawn(move || {
-        let mut buf = [0u8; 16384];
+        let mut buf = [0u8; 262144];
         loop {
             match client_read.read(&mut buf) {
                 Ok(0) => break,
@@ -439,7 +439,7 @@ fn handle_connection(mut client: TcpStream) {
     });
     
     let t2 = std::thread::spawn(move || {
-        let mut buf = [0u8; 16384];
+        let mut buf = [0u8; 262144];
         loop {
             match target_read.read(&mut buf) {
                 Ok(0) => break,
