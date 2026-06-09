@@ -1,0 +1,5 @@
+* text eol=lf
+*.zip binary
+*.tar binary
+*.gz binary
+udp-custom-linux-amd64 binary
