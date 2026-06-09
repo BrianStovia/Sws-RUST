@@ -669,9 +669,22 @@ WantedBy=multi-user.target
 chmod +x /etc/noobzvpns/*
 cd
 
-# Certificate
+# Certificate Setup with Backup & Reuse logic
 iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 2080 2>/dev/null || true
+mkdir -p /usr/local/etc/v2ray
 echo -e "${domain}" > /usr/local/etc/v2ray/domain
+
+backup_dir="/etc/ssl/v2ray"
+cert_file="/usr/local/etc/v2ray/v2ray.crt"
+key_file="/usr/local/etc/v2ray/v2ray.key"
+
+# Check if valid backup exists for this domain
+if [ -f "${backup_dir}/domain" ] && [ "$(cat ${backup_dir}/domain)" = "${domain}" ] && [ -f "${backup_dir}/v2ray.crt" ] && [ -f "${backup_dir}/v2ray.key" ]; then
+    echo "Found SSL certificate backup for domain: ${domain}. Restoring backup to bypass acme.sh rate limit..."
+    cp "${backup_dir}/v2ray.crt" "${cert_file}"
+    cp "${backup_dir}/v2ray.key" "${key_file}"
+else
+    echo "No valid SSL backup found for domain: ${domain}. Requesting new SSL certificate..."
     rm -rf /root/.acme.sh
     mkdir -p /root/.acme.sh
     curl -sSL https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh -o /root/.acme.sh/acme.sh
@@ -689,17 +702,26 @@ echo -e "${domain}" > /usr/local/etc/v2ray/domain
             /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
         fi
     fi
-    /root/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /usr/local/etc/v2ray/v2ray.crt --keypath /usr/local/etc/v2ray/v2ray.key --ecc
+    /root/.acme.sh/acme.sh --installcert -d $domain --fullchainpath "${cert_file}" --keypath "${key_file}" --ecc
 
     # Fallback to self-signed certificate if acme.sh failed to create the certificate
-    if [ ! -f "/usr/local/etc/v2ray/v2ray.crt" ] || [ ! -f "/usr/local/etc/v2ray/v2ray.key" ]; then
+    if [ ! -f "${cert_file}" ] || [ ! -f "${key_file}" ]; then
         echo "SSL certificate not found. Generating self-signed certificate as fallback..."
-        mkdir -p /usr/local/etc/v2ray
         openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
             -subj "/C=ID/ST=Jakarta/L=Jakarta/O=FNProject/CN=${domain}" \
-            -keyout /usr/local/etc/v2ray/v2ray.key \
-            -out /usr/local/etc/v2ray/v2ray.crt 2>/dev/null
+            -keyout "${key_file}" \
+            -out "${cert_file}" 2>/dev/null
     fi
+
+    # Backup the newly generated certificate for future reinstallations
+    if [ -f "${cert_file}" ] && [ -f "${key_file}" ]; then
+        echo "Backing up SSL certificate for domain ${domain} to prevent future rate-limiting..."
+        mkdir -p "${backup_dir}"
+        cp "${cert_file}" "${backup_dir}/v2ray.crt"
+        cp "${key_file}" "${backup_dir}/v2ray.key"
+        echo "${domain}" > "${backup_dir}/domain"
+    fi
+fi
 
 cd /root
 
