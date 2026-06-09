@@ -5,6 +5,34 @@ use std::path::Path;
 use std::sync::Mutex;
 use std::time::Duration;
 
+// Set large OS socket send/receive buffers (8 MB each) to prevent
+// kernel-level buffering from capping throughput on fast links.
+#[cfg(unix)]
+fn set_socket_buffers(stream: &TcpStream) {
+    use std::os::unix::io::AsRawFd;
+    let fd = stream.as_raw_fd();
+    let buf_size: libc::c_int = 8 * 1024 * 1024; // 8 MB
+    unsafe {
+        libc::setsockopt(
+            fd,
+            libc::SOL_SOCKET,
+            libc::SO_SNDBUF,
+            &buf_size as *const _ as *const libc::c_void,
+            std::mem::size_of::<libc::c_int>() as libc::socklen_t,
+        );
+        libc::setsockopt(
+            fd,
+            libc::SOL_SOCKET,
+            libc::SO_RCVBUF,
+            &buf_size as *const _ as *const libc::c_void,
+            std::mem::size_of::<libc::c_int>() as libc::socklen_t,
+        );
+    }
+}
+
+#[cfg(not(unix))]
+fn set_socket_buffers(_stream: &TcpStream) {}
+
 static WS_LOCK: Mutex<()> = Mutex::new(());
 
 fn get_ws_ports_path() -> &'static str {
@@ -343,6 +371,8 @@ fn handle_connection(mut client: TcpStream) {
     let mut target = match TcpStream::connect(&target_host) {
         Ok(t) => {
             let _ = t.set_nodelay(true);
+            #[cfg(unix)]
+            set_socket_buffers(&t);
             t
         }
         Err(e) => {
@@ -350,6 +380,11 @@ fn handle_connection(mut client: TcpStream) {
             return;
         }
     };
+    
+    // Also apply no-delay + large buffers to the client socket
+    let _ = client.set_nodelay(true);
+    #[cfg(unix)]
+    set_socket_buffers(&client);
     
     let local_port = match target.local_addr() {
         Ok(addr) => addr.port(),

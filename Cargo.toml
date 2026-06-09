@@ -28,4 +28,5 @@ name = "sws"
 path = "src/sws.rs"
 
 [dependencies]
-# No external dependencies to keep the project light and pure standard library.
+# libc is used for low-level socket buffer tuning (SO_SNDBUF/SO_RCVBUF) in proxy.rs
+libc = "0.2"
